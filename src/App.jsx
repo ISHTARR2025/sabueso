@@ -1,4 +1,4 @@
-import logoSabueso from '../public/images/logo-sabueso.png';
+import logoSabueso from '/images/logo-sabueso.png';
 import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Search, User, Bell, MessageSquare, LogOut, Eye, EyeOff, Plus, X, BarChart3, Send } from 'lucide-react';
 
