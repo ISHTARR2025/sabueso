@@ -8,8 +8,8 @@ import {
   onAuthStateChanged
 } from 'firebase/auth';
 import {
-  collection, addDoc, getDocs, doc, updateDoc, onSnapshot,
-  query, orderBy, serverTimestamp, getDoc, setDoc
+  collection, addDoc, doc, updateDoc, onSnapshot,
+  query, orderBy, getDoc, setDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
