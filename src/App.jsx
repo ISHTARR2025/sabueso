@@ -1,4 +1,3 @@
-import logoSabueso from '/images/logo-sabueso.png';
 import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Search, User, Bell, MessageSquare, LogOut, Eye, EyeOff, Plus, X, BarChart3, Send } from 'lucide-react';
 
@@ -280,7 +279,7 @@ const Sabueso = () => {
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4">
-                <img src={logoSabueso}/>
+                <img src="/images/logo-sabueso.png" alt="Logo Sabueso" className="w-24 h-24"/>
               </div>
               <h1 className="text-4xl font-black text-lime-500 mb-2">SABUESO</h1>
               <p className="text-gray-400">Crea tu cuenta</p>
