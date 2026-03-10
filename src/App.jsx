@@ -647,8 +647,12 @@ const Sabueso = () => {
               </button>
               <button onClick={() => setScreen('chat')} className="p-2 hover:bg-gray-800 rounded-lg"><MessageSquare size={20} className="text-gray-400" /></button>
               <button onClick={() => setScreen('profile')} className="p-2 hover:bg-gray-800 rounded-lg"><User size={20} className="text-gray-400" /></button>
+            {currentUserData?.isAdmin && (
               <button onClick={() => setShowAdmin(!showAdmin)} className="p-2 hover:bg-gray-800 rounded-lg"><BarChart3 size={20} className="text-gray-400" /></button>
-            </div>
+            )}
+            <button onClick={handleLogout} className="p-2 hover:bg-gray-800 rounded-lg">
+              <LogOut size={20} className="text-gray-400" />
+            </button>
           </div>
           {showSearch && (
             <div className="border-t border-gray-800 p-4 bg-gray-900">
@@ -741,10 +745,6 @@ const Sabueso = () => {
             </div>
           </div>
         )}
-
-        <button onClick={handleLogout} className="fixed bottom-8 left-8 p-3 bg-gray-900 border border-gray-800 hover:border-lime-500 rounded-lg transition-colors">
-          <LogOut size={20} className="text-gray-400" />
-        </button>
 
         {/* Lightbox */}
         {lightboxPhoto && (
