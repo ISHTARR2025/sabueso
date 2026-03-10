@@ -753,9 +753,10 @@ const Sabueso = () => {
             <img src={lightboxPhoto} alt="Foto ampliada" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
           </div>
         )}
+        </div>
       </div>
-    );
-  }
+      );
+     }
 
   // ── PROFILE SCREEN ───────────────────────────────────────────
 
