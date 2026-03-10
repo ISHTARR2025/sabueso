@@ -35,7 +35,6 @@ const Sabueso = () => {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [loginCompanyPassword, setLoginCompanyPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [showRegister, setShowRegister] = useState(false);
@@ -74,7 +73,8 @@ const Sabueso = () => {
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const [viewingProfile, setViewingProfile] = useState(null); // public profile userId
   const [viewingProfileData, setViewingProfileData] = useState(null);
-  
+  const [reportingPostId, setReportingPostId] = useState(null);
+
   // Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -134,7 +134,7 @@ const Sabueso = () => {
     e.preventDefault();
     setAuthError('');
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginCompanyPassword);
+      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
       setLoginEmail('');
       setLoginPassword('');
     } catch (err) {
@@ -273,6 +273,7 @@ const Sabueso = () => {
     const reports = postSnap.data().reports || [];
     if (reports.includes(currentUser.uid)) { alert('Ya reportaste esta publicación'); return; }
     await updateDoc(postRef, { reports: [...reports, currentUser.uid] });
+    setReportingPostId(null);
     alert('Publicación reportada. Gracias.');
   };
 
@@ -589,7 +590,6 @@ const Sabueso = () => {
             <button onClick={() => { setShowRegister(true); setRegisterType('user'); setAuthError(''); }}
               className="w-full text-center mt-3 text-sm text-gray-400 hover:text-lime-500">
               ¿No tienes cuenta? <span className="text-lime-500 font-bold">Regístrate gratis</span>
-            <p className="text-xs text-gray-500 mt-1">No necesitas correo ni número de teléfono</p>
             </button>
           </div>
 
@@ -606,7 +606,7 @@ const Sabueso = () => {
               <input type="email" placeholder="Correo empresarial" value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} placeholder="Contraseña" value={loginCompanyPassword} onChange={e => setLoginCompanyPassword(e.target.value)}
+                <input type={showPassword ? 'text' : 'password'} placeholder="Contraseña" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400">
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -634,25 +634,22 @@ const Sabueso = () => {
       <div className="min-h-screen bg-black text-white" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(50, 211, 153, 0.05) 0%, transparent 50%)' }}>
         {/* Header */}
         <div className="fixed top-0 left-0 right-0 bg-gray-900/95 border-b border-gray-800 z-40 backdrop-blur-sm">
-          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src="/images/logo-sabueso.png" alt="Logo Sabueso" className="h-8 w-auto" />
-              <h1 className="text-2xl font-black text-lime-500">SABUESO</h1>
+          <div className="max-w-2xl mx-auto px-3 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <img src="/images/logo-sabueso.png" alt="Logo Sabueso" className="h-7 w-auto flex-shrink-0" />
+              <h1 className="text-xl font-black text-lime-500">SABUESO</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowSearch(!showSearch)} className="p-2 hover:bg-gray-800 rounded-lg"><Search size={20} className="text-gray-400" /></button>
-              <button onClick={() => setScreen('notifications')} className="relative p-2 hover:bg-gray-800 rounded-lg">
-                <Bell size={20} className="text-gray-400" />
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button onClick={() => setShowSearch(!showSearch)} className="p-1.5 hover:bg-gray-800 rounded-lg"><Search size={18} className="text-gray-400" /></button>
+              <button onClick={() => setScreen('notifications')} className="relative p-1.5 hover:bg-gray-800 rounded-lg">
+                <Bell size={18} className="text-gray-400" />
                 {notifications.length > 0 && <div className="absolute top-1 right-1 w-2 h-2 bg-lime-500 rounded-full"></div>}
               </button>
-              <button onClick={() => setScreen('chat')} className="p-2 hover:bg-gray-800 rounded-lg"><MessageSquare size={20} className="text-gray-400" /></button>
-              <button onClick={() => setScreen('profile')} className="p-2 hover:bg-gray-800 rounded-lg"><User size={20} className="text-gray-400" /></button>
-            {currentUserData?.isAdmin && (
-              <button onClick={() => setShowAdmin(!showAdmin)} className="p-2 hover:bg-gray-800 rounded-lg"><BarChart3 size={20} className="text-gray-400" /></button>
-            )}
-            <button onClick={handleLogout} className="p-2 hover:bg-gray-800 rounded-lg">
-              <LogOut size={20} className="text-gray-400" />
-            </button>
+              <button onClick={() => setScreen('chat')} className="p-1.5 hover:bg-gray-800 rounded-lg"><MessageSquare size={18} className="text-gray-400" /></button>
+              <button onClick={() => setScreen('profile')} className="p-1.5 hover:bg-gray-800 rounded-lg"><User size={18} className="text-gray-400" /></button>
+              {currentUserData?.isAdmin && (<button onClick={() => setShowAdmin(!showAdmin)} className="p-1.5 hover:bg-gray-800 rounded-lg"><BarChart3 size={18} className="text-gray-400" /></button>)}
+              <button onClick={handleLogout} className="p-1.5 hover:bg-gray-800 rounded-lg"><LogOut size={18} className="text-gray-400" /></button>
+            </div>
           </div>
           {showSearch && (
             <div className="border-t border-gray-800 p-4 bg-gray-900">
@@ -753,10 +750,9 @@ const Sabueso = () => {
             <img src={lightboxPhoto} alt="Foto ampliada" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
           </div>
         )}
-        </div>
       </div>
-      );
-     }
+    );
+  }
 
   // ── PROFILE SCREEN ───────────────────────────────────────────
 
