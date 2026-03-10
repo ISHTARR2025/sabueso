@@ -589,6 +589,7 @@ const Sabueso = () => {
             <button onClick={() => { setShowRegister(true); setRegisterType('user'); setAuthError(''); }}
               className="w-full text-center mt-3 text-sm text-gray-400 hover:text-lime-500">
               ¿No tienes cuenta? <span className="text-lime-500 font-bold">Regístrate gratis</span>
+            <p className="text-xs text-gray-500 mt-1">No necesitas correo ni número de teléfono</p>
             </button>
           </div>
 
