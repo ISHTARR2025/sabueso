@@ -73,7 +73,8 @@ const Sabueso = () => {
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const [viewingProfile, setViewingProfile] = useState(null); // public profile userId
   const [viewingProfileData, setViewingProfileData] = useState(null);
-  
+  const [reportingPostId, setReportingPostId] = useState(null);
+
   // Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -104,6 +105,19 @@ const Sabueso = () => {
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(post => post.expiresAt > now);
       setPosts(fetchedPosts);
+    });
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Notifications listener
+  useEffect(() => {
+    if (!currentUser) return;
+    const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const myNotifs = snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(n => n.toUserId === currentUser.uid);
+      setNotifications(myNotifs);
     });
     return () => unsubscribe();
   }, [currentUser]);
@@ -272,6 +286,7 @@ const Sabueso = () => {
     const reports = postSnap.data().reports || [];
     if (reports.includes(currentUser.uid)) { alert('Ya reportaste esta publicación'); return; }
     await updateDoc(postRef, { reports: [...reports, currentUser.uid] });
+    setReportingPostId(null);
     alert('Publicación reportada. Gracias.');
   };
 
@@ -311,7 +326,18 @@ const Sabueso = () => {
       createdAt: Date.now()
     };
     await updateDoc(postRef, { responses: [...currentResponses, response] });
-    setNotifications([...notifications, { id: Date.now(), type: 'response', postId: selectedChat.postId, fromUser: currentUserData?.name }]);
+    // Guardar notificación en Firestore para el dueño del post
+    if (selectedChat.otherUserId !== currentUser.uid) {
+      await addDoc(collection(db, 'notifications'), {
+        toUserId: selectedChat.otherUserId,
+        fromUserName: currentUserData?.name || 'Usuario',
+        postId: selectedChat.postId,
+        postTitle: selectedChat.postTitle,
+        type: 'response',
+        read: false,
+        createdAt: Date.now()
+      });
+    }
     setChatMessage('');
   };
 
@@ -641,7 +667,7 @@ const Sabueso = () => {
               <button onClick={() => setShowSearch(!showSearch)} className="p-1.5 hover:bg-gray-800 rounded-lg"><Search size={18} className="text-gray-400" /></button>
               <button onClick={() => setScreen('notifications')} className="relative p-1.5 hover:bg-gray-800 rounded-lg">
                 <Bell size={18} className="text-gray-400" />
-                {notifications.length > 0 && <div className="absolute top-1 right-1 w-2 h-2 bg-lime-500 rounded-full"></div>}
+                {notifications.filter(n => !n.read).length > 0 && <div className="absolute top-1 right-1 w-2 h-2 bg-lime-500 rounded-full"></div>}
               </button>
               <button onClick={() => setScreen('chat')} className="p-1.5 hover:bg-gray-800 rounded-lg"><MessageSquare size={18} className="text-gray-400" /></button>
               <button onClick={() => setScreen('profile')} className="p-1.5 hover:bg-gray-800 rounded-lg"><User size={18} className="text-gray-400" /></button>
@@ -901,9 +927,19 @@ const Sabueso = () => {
           </div>
           <div className="space-y-4">
             {notifications.length > 0 ? notifications.map(notif => (
-              <div key={notif.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-lime-500 transition-colors">
-                <div className="text-white">{notif.fromUser} respondió a tu publicación</div>
-                <div className="text-gray-400 text-sm mt-1">hace unos momentos</div>
+              <div key={notif.id}
+                className={`rounded-lg p-4 border transition-colors cursor-pointer ${notif.read ? 'bg-gray-900 border-gray-800' : 'bg-gray-800 border-lime-500'}`}
+                onClick={async () => {
+                  await updateDoc(doc(db, 'notifications', notif.id), { read: true });
+                }}>
+                <div className="flex items-center justify-between">
+                  <div className="text-white font-medium">
+                    <span className="text-lime-500">{notif.fromUserName}</span> respondió en tu publicación
+                  </div>
+                  {!notif.read && <div className="w-2 h-2 bg-lime-500 rounded-full flex-shrink-0"></div>}
+                </div>
+                <div className="text-gray-400 text-sm mt-1">{notif.postTitle}</div>
+                <div className="text-gray-500 text-xs mt-1">{new Date(notif.createdAt).toLocaleString('es-GT')}</div>
               </div>
             )) : <p className="text-gray-500 text-center py-12">Sin notificaciones</p>}
           </div>
