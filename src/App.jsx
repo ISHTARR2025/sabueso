@@ -73,7 +73,6 @@ const Sabueso = () => {
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
   const [viewingProfile, setViewingProfile] = useState(null); // public profile userId
   const [viewingProfileData, setViewingProfileData] = useState(null);
-  const [reportingPostId, setReportingPostId] = useState(null);
 
   // Auth listener
   useEffect(() => {
@@ -286,7 +285,6 @@ const Sabueso = () => {
     const reports = postSnap.data().reports || [];
     if (reports.includes(currentUser.uid)) { alert('Ya reportaste esta publicación'); return; }
     await updateDoc(postRef, { reports: [...reports, currentUser.uid] });
-    setReportingPostId(null);
     alert('Publicación reportada. Gracias.');
   };
 
