@@ -36,6 +36,7 @@ const Sabueso = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [showRegister, setShowRegister] = useState(false);
   const [registerType, setRegisterType] = useState('user'); // 'user' | 'company'
@@ -227,7 +228,7 @@ const Sabueso = () => {
     setRegEmail(''); setRegCompanyPassword(''); setRegCompanyConfirm('');
     setRegCompanyName(''); setRegPhone(''); setRegWebsite('');
     setRegCompanyPhoto(null); setRegCompanyPhotoPreview(null);
-    setShowRegister(false); setAuthError('');
+    setShowRegister(false); setAuthError(''); setShowConfirmPassword(false);
   };
 
   const handleLogout = async () => { await signOut(auth); };
@@ -515,8 +516,13 @@ const Sabueso = () => {
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
-                <input type="password" placeholder="Confirmar contraseña" value={regConfirm} onChange={e => setRegConfirm(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
+                <div className="relative">
+                  <input type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirmar contraseña" value={regConfirm} onChange={e => setRegConfirm(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-gray-400">
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm text-gray-400">Pregunta de seguridad</label>
                   <select value={regSecurityQ} onChange={e => setRegSecurityQ(e.target.value)}
@@ -559,8 +565,13 @@ const Sabueso = () => {
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
-                <input type="password" placeholder="Confirmar contraseña" value={regCompanyConfirm} onChange={e => setRegCompanyConfirm(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
+                <div className="relative">
+                  <input type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirmar contraseña" value={regCompanyConfirm} onChange={e => setRegCompanyConfirm(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-gray-400">
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
                 <input type="tel" placeholder="Teléfono: +502 XXXX-XXXX" value={regPhone} onChange={e => setRegPhone(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" />
                 <input type="text" placeholder="Sitio web: www.tuempresa.com" value={regWebsite} onChange={e => setRegWebsite(e.target.value)}
@@ -612,6 +623,7 @@ const Sabueso = () => {
             <button onClick={() => { setShowRegister(true); setRegisterType('user'); setAuthError(''); }}
               className="w-full text-center mt-3 text-sm text-gray-400 hover:text-lime-500">
               ¿No tienes cuenta? <span className="text-lime-500 font-bold">Regístrate gratis</span>
+              <p className="text-yellow-400 font-bold text-xs mt-1">No requieres correo ni número de teléfono</p>
             </button>
           </div>
 
@@ -970,7 +982,14 @@ const Sabueso = () => {
                 <p className="text-sm text-gray-400">Con {selectedChat.otherUserName}</p>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {posts.find(p => p.id === selectedChat.postId)?.responses?.map(response => {
+                {posts.find(p => p.id === selectedChat.postId)?.responses
+                  ?.filter(response => {
+                    const post = posts.find(p => p.id === selectedChat.postId);
+                    const isPostOwner = post?.userId === currentUser.uid;
+                    // Dueño ve todo. Otros solo ven sus propios mensajes y los del dueño.
+                    return isPostOwner || response.userId === currentUser.uid || response.userId === post?.userId;
+                  })
+                  .map(response => {
                   const isMe = response.userId === currentUser.uid;
                   const isCompany = response.userIsCompany;
                   const isAvatarUrl = response.userAvatar && (response.userAvatar.startsWith('http') || response.userAvatar.startsWith('blob'));
