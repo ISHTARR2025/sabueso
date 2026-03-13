@@ -5,7 +5,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import {
   collection, addDoc, doc, updateDoc, onSnapshot,
@@ -36,8 +38,11 @@ const Sabueso = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showCompanyPassword, setShowCompanyPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [registerType, setRegisterType] = useState('user'); // 'user' | 'company'
 
@@ -147,7 +152,12 @@ const Sabueso = () => {
     e.preventDefault();
     setAuthError('');
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      if (!userCredential.user.emailVerified) {
+        await signOut(auth);
+        setAuthError('Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+        return;
+      }
       setLoginEmail('');
       setLoginPassword('');
     } catch (err) {
@@ -213,8 +223,12 @@ const Sabueso = () => {
         profileViews: 0
       };
       await setDoc(doc(db, 'users', user.uid), userData);
+      // Enviar correo de verificación
+      await sendEmailVerification(user);
       setCurrentUserData(userData);
       resetRegisterForm();
+      alert('✅ Cuenta creada. Por favor revisa tu correo y verifica tu cuenta antes de iniciar sesión.');
+      await signOut(auth);
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') setAuthError('Este correo ya está registrado');
       else if (err.code === 'auth/weak-password') setAuthError('La contraseña debe tener al menos 6 caracteres');
@@ -229,6 +243,17 @@ const Sabueso = () => {
     setRegCompanyName(''); setRegPhone(''); setRegWebsite('');
     setRegCompanyPhoto(null); setRegCompanyPhotoPreview(null);
     setShowRegister(false); setAuthError(''); setShowConfirmPassword(false);
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetSent(true);
+    } catch (err) {
+      setAuthError('No encontramos ese correo. Verifica e intenta de nuevo.');
+    }
   };
 
   const handleLogout = async () => { await signOut(auth); };
@@ -585,13 +610,53 @@ const Sabueso = () => {
       );
     }
 
+    // Forgot password screen
+    if (screen === 'forgotPassword') {
+      return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center p-4" style={{ backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(50, 211, 153, 0.1) 0%, transparent 60%)' }}>
+          <div className="w-full max-w-md">
+            <div className="text-center mb-8">
+              <img src="/images/logo-sabueso.png" alt="Logo" className="h-14 w-auto mx-auto mb-2" />
+              <h1 className="text-3xl font-black text-lime-500">SABUESO</h1>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+              <h2 className="text-xl font-bold text-white mb-2">Recuperar contraseña</h2>
+              <p className="text-gray-400 text-sm mb-6">Ingresa tu correo empresarial y te enviaremos un enlace para restablecer tu contraseña.</p>
+              {authError && <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded-lg text-sm mb-4">{authError}</div>}
+              {resetSent ? (
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📧</div>
+                  <p className="text-lime-500 font-bold mb-2">¡Correo enviado!</p>
+                  <p className="text-gray-400 text-sm mb-6">Revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contraseña.</p>
+                  <button onClick={() => { setScreen('login'); setResetSent(false); setResetEmail(''); }}
+                    className="w-full bg-lime-500 text-black py-3 rounded-lg font-bold hover:bg-lime-400 transition-all">
+                    Volver al inicio de sesión
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handlePasswordReset} className="space-y-4">
+                  <input type="email" placeholder="Correo empresarial" value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
+                  <button type="submit" className="w-full bg-lime-500 text-black py-3 rounded-lg font-bold hover:bg-lime-400 transition-all">
+                    Enviar enlace de recuperación
+                  </button>
+                </form>
+              )}
+            </div>
+            <button onClick={() => { setScreen('login'); setAuthError(''); }}
+              className="w-full text-center mt-4 text-gray-400 hover:text-lime-500">← Volver al login</button>
+          </div>
+        </div>
+      );
+    }
+
     // Login screen — two panels
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4" style={{ backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(50, 211, 153, 0.1) 0%, transparent 60%)' }}>
         <div className="text-center mb-8">
           <img src="/images/logo-sabueso.png" alt="Logo Sabueso" className="h-16 w-auto mx-auto mb-3" />
           <h1 className="text-5xl font-black text-lime-500">SABUESO</h1>
-          <p className="text-gray-400 mt-1">Tu pides, ellos ofertan</p>
+          <p className="text-gray-400 mt-1">Encuentra lo que Buscas</p>
         </div>
 
         {authError && <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-2 rounded-lg text-sm mb-4 w-full max-w-2xl">{authError}</div>}
@@ -640,18 +705,22 @@ const Sabueso = () => {
               <input type="email" placeholder="Correo empresarial" value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} placeholder="Contraseña" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                <input type={showCompanyPassword ? 'text' : 'password'} placeholder="Contraseña" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400">
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                <button type="button" onClick={() => setShowCompanyPassword(!showCompanyPassword)} className="absolute right-3 top-3 text-gray-400">
+                  {showCompanyPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               <button type="submit" className="w-full bg-lime-500 text-black py-3 rounded-lg font-bold hover:bg-lime-400 transition-all">
                 Acceder como Empresa
               </button>
             </form>
+            <button onClick={() => setScreen('forgotPassword')}
+              className="w-full text-center mt-2 text-sm text-gray-500 hover:text-lime-500">
+              ¿Olvidaste tu contraseña?
+            </button>
             <button onClick={() => { setShowRegister(true); setRegisterType('company'); setAuthError(''); }}
-              className="w-full text-center mt-3 text-sm text-gray-400 hover:text-lime-500">
+              className="w-full text-center mt-2 text-sm text-gray-400 hover:text-lime-500">
               ¿No tienes cuenta? <span className="text-lime-500 font-bold">Crear cuenta empresarial</span>
             </button>
           </div>
@@ -815,25 +884,27 @@ const Sabueso = () => {
             </div>
 
             <div className="border-t border-gray-800 pt-6">
-              <div className={`grid gap-4 text-center ${currentUserData?.isCompany ? 'grid-cols-4' : 'grid-cols-3'}`}>
+              <div className="grid gap-4 text-center grid-cols-3">
                 <div>
                   <div className="text-2xl font-bold text-lime-500">{userPosts.length}</div>
                   <div className="text-xs text-gray-400">Mis Anuncios</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-lime-500">{userResponses.length}</div>
-                  <div className="text-xs text-gray-400">Respuestas Dadas</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-lime-500">{posts.reduce((sum, p) => p.userId === currentUser.uid ? sum + (p.likes || 0) : sum, 0)}</div>
-                  <div className="text-xs text-gray-400">Likes Recibidos</div>
-                </div>
+                {!currentUserData?.isCompany && (
+                  <div>
+                    <div className="text-2xl font-bold text-lime-500">{userResponses.length}</div>
+                    <div className="text-xs text-gray-400">Respuestas Dadas</div>
+                  </div>
+                )}
                 {currentUserData?.isCompany && (
                   <div>
                     <div className="text-2xl font-bold text-lime-500">{postsCommented.length}</div>
                     <div className="text-xs text-gray-400">Publicaciones Comentadas</div>
                   </div>
                 )}
+                <div>
+                  <div className="text-2xl font-bold text-lime-500">{posts.reduce((sum, p) => p.userId === currentUser.uid ? sum + (p.likes || 0) : sum, 0)}</div>
+                  <div className="text-xs text-gray-400">Likes Recibidos</div>
+                </div>
               </div>
 
               {currentUserData?.isCompany && (
@@ -994,27 +1065,21 @@ const Sabueso = () => {
                   const isCompany = response.userIsCompany;
                   const isAvatarUrl = response.userAvatar && (response.userAvatar.startsWith('http') || response.userAvatar.startsWith('blob'));
                   return (
-                    <div key={response.id} className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div key={response.id} className={`flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
                       {!isMe && isCompany && (
-                        <button onClick={() => handleViewCompanyProfile(response.userId)} className="flex-shrink-0 mb-1">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center border-2 border-lime-500 hover:border-lime-400 transition-colors">
-                            {isAvatarUrl ? <img src={response.userAvatar} alt={response.userName} className="w-full h-full object-cover" /> : <span className="text-sm">{response.userAvatar}</span>}
+                        <button onClick={() => handleViewCompanyProfile(response.userId)}
+                          className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                          <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center border-2 border-lime-500">
+                            {isAvatarUrl ? <img src={response.userAvatar} alt={response.userName} className="w-full h-full object-cover" /> : <span className="text-xs">{response.userAvatar}</span>}
                           </div>
+                          <span className="text-xs text-lime-500 font-bold">🏢 {response.userName}</span>
                         </button>
                       )}
-                      <div className={`max-w-xs ${isMe ? '' : ''}`}>
-                        {!isMe && isCompany && (
-                          <button onClick={() => handleViewCompanyProfile(response.userId)}
-                            className="text-xs text-lime-500 hover:text-lime-400 font-bold mb-1 block">
-                            🏢 {response.userName}
-                          </button>
-                        )}
-                        {!isMe && !isCompany && (
-                          <p className="text-xs text-gray-500 mb-1">{response.userName}</p>
-                        )}
-                        <div className={`px-4 py-2 rounded-lg ${isMe ? 'bg-lime-500 text-black' : 'bg-gray-800 text-white'}`}>
-                          <p>{response.message}</p>
-                        </div>
+                      {!isMe && !isCompany && (
+                        <p className="text-xs text-gray-500">{response.userName}</p>
+                      )}
+                      <div className={`max-w-xs px-4 py-2 rounded-lg ${isMe ? 'bg-lime-500 text-black' : 'bg-gray-800 text-white'}`}>
+                        <p>{response.message}</p>
                       </div>
                     </div>
                   );
