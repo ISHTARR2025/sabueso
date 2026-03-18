@@ -155,7 +155,7 @@ const Sabueso = () => {
       // Si hay un reset pendiente, intentar con la nueva contraseña primero
       if (userData.pendingPasswordReset) {
         try {
-          const cred = await signInWithEmailAndPassword(auth, userData.proxyEmail, loginPassword);
+          await signInWithEmailAndPassword(auth, userData.proxyEmail, loginPassword);
           // Login exitoso con contraseña actual, limpiar pendingPasswordReset si existe
           await updateDoc(doc(db, 'users', userDoc.id), { pendingPasswordReset: null });
         } catch {
@@ -727,16 +727,7 @@ const Sabueso = () => {
                         setRecoverError('');
                         if (recoverNewPassword.length < 6) { setRecoverError('La contraseña debe tener al menos 6 caracteres'); return; }
                         try {
-                          // Para cambiar contraseña sin saber la actual, usamos
-                          // el securityAnswer como contraseña temporal en Firestore
-                          // El truco: guardamos un resetToken y lo usamos para login temporal
-                          const tempPassword = 'reset_' + recoverUserData.securityAnswer + '_sabueso';
-                          // Primero actualizamos el password en Firebase Auth usando updatePassword
-                          // Para eso necesitamos estar autenticados - usamos signIn con la contraseña actual
-                          // Como no la tenemos, guardamos la nueva en Firestore y pedimos al usuario
-                          // que inicie sesión normalmente - el sistema detectará el reset pendiente
-                          // SOLUCIÓN REAL: guardamos nueva contraseña encriptada en Firestore
-                          // y al hacer login, si hay pendingPassword, actualizamos Auth
+
                           await updateDoc(doc(db, 'users', recoverUserData.id), {
                             pendingPasswordReset: recoverNewPassword
                           });
