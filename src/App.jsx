@@ -38,6 +38,7 @@ const Sabueso = () => {
   const [loginUsername, setLoginUsername] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [loginCompanyPassword, setLoginCompanyPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showUserLoginPassword, setShowUserLoginPassword] = useState(false);
   const [showCompanyPassword, setShowCompanyPassword] = useState(false);
@@ -161,7 +162,7 @@ const Sabueso = () => {
     e.preventDefault();
     setAuthError('');
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginCompanyPassword);
       if (!userCredential.user.emailVerified) {
         await signOut(auth);
         setAuthError('Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
@@ -825,7 +826,7 @@ const Sabueso = () => {
               <input type="email" placeholder="Correo empresarial" value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
               <div className="relative">
-                <input type={showCompanyPassword ? 'text' : 'password'} placeholder="Contraseña" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                <input type={showCompanyPassword ? 'text' : 'password'} placeholder="Contraseña" value={loginCompanyPassword} onChange={e => setLoginCompanyPassword(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-lime-500 focus:outline-none" required />
                 <button type="button" onClick={() => setShowCompanyPassword(!showCompanyPassword)} className="absolute right-3 top-3 text-gray-400">
                   {showCompanyPassword ? <EyeOff size={20} /> : <Eye size={20} />}
