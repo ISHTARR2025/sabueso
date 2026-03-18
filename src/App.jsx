@@ -152,27 +152,9 @@ const Sabueso = () => {
       if (!userDoc) { setAuthError('Usuario no encontrado'); return; }
       const userData = userDoc.data();
 
-      // Si hay un reset pendiente, intentar con la nueva contraseña primero
-      if (userData.pendingPasswordReset) {
-        try {
-          await signInWithEmailAndPassword(auth, userData.proxyEmail, loginPassword);
-          // Login exitoso con contraseña actual, limpiar pendingPasswordReset si existe
-          await updateDoc(doc(db, 'users', userDoc.id), { pendingPasswordReset: null });
-        } catch {
-          // Si falla con contraseña actual, intentar con la nueva (pendingPasswordReset)
-          try {
-            const cred2 = await signInWithEmailAndPassword(auth, userData.proxyEmail, userData.pendingPasswordReset);
-            // Coincidió con pendingPassword - actualizar Auth con esa contraseña
-            await updatePassword(cred2.user, userData.pendingPasswordReset);
-            await updateDoc(doc(db, 'users', userDoc.id), { pendingPasswordReset: null });
-          } catch {
-            setAuthError('Usuario o contraseña incorrectos');
-            return;
-          }
-        }
-      } else {
-        await signInWithEmailAndPassword(auth, userData.proxyEmail, loginPassword);
-      }
+      await signInWithEmailAndPassword(auth, userData.proxyEmail, loginPassword);
+      // Actualizar pwHash en Firestore al hacer login exitoso
+      await updateDoc(doc(db, 'users', userDoc.id), { pwHash: btoa(loginPassword) });
       setLoginUsername('');
       setLoginPassword('');
     } catch (err) {
@@ -216,6 +198,7 @@ const Sabueso = () => {
         isCompany: false,
         securityQuestion: regSecurityQ,
         securityAnswer: regSecurityA.toLowerCase().trim(),
+        pwHash: btoa(regPassword),
         createdAt: Date.now()
       };
       await setDoc(doc(db, 'users', user.uid), userData);
@@ -726,15 +709,7 @@ const Sabueso = () => {
                       <button onClick={async () => {
                         setRecoverError('');
                         if (recoverNewPassword.length < 6) { setRecoverError('La contraseña debe tener al menos 6 caracteres'); return; }
-                        try {
 
-                          await updateDoc(doc(db, 'users', recoverUserData.id), {
-                            pendingPasswordReset: recoverNewPassword
-                          });
-                          setRecoverSuccess(true);
-                        } catch (err) {
-                          setRecoverError('Error al actualizar contraseña. Intenta de nuevo.');
-                        }
                       }} className="w-full bg-lime-500 text-black py-3 rounded-lg font-bold hover:bg-lime-400 transition-all">
                         Guardar nueva contraseña
                       </button>
