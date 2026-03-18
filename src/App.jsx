@@ -709,7 +709,17 @@ const Sabueso = () => {
                       <button onClick={async () => {
                         setRecoverError('');
                         if (recoverNewPassword.length < 6) { setRecoverError('La contraseña debe tener al menos 6 caracteres'); return; }
-
+                        try {
+                          const currentPassword = atob(recoverUserData.pwHash || '');
+                          if (!currentPassword) { setRecoverError('Debes iniciar sesión al menos una vez antes de recuperar la contraseña.'); return; }
+                          const userCredential = await signInWithEmailAndPassword(auth, recoverUserData.proxyEmail, currentPassword);
+                          await updatePassword(userCredential.user, recoverNewPassword);
+                          await updateDoc(doc(db, 'users', recoverUserData.id), { pwHash: btoa(recoverNewPassword) });
+                          await signOut(auth);
+                          setRecoverSuccess(true);
+                        } catch (err) {
+                          setRecoverError('Error al actualizar contraseña. Intenta de nuevo.');
+                        }
                       }} className="w-full bg-lime-500 text-black py-3 rounded-lg font-bold hover:bg-lime-400 transition-all">
                         Guardar nueva contraseña
                       </button>
